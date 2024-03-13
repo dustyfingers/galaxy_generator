@@ -8,6 +8,9 @@ import GUI from "lil-gui";
 // Debug
 const gui = new GUI();
 
+// constants
+const tau = Math.PI * 2;
+
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
 
@@ -17,26 +20,38 @@ const scene = new THREE.Scene();
 const galaxyParams = {
   count: 1000,
   size: 0.02,
+  radius: 5,
+  branches: 5,
 };
 
-gui.add(galaxyParams, "count").min(100).max(100000000).step(1000);
-gui.add(galaxyParams, "size").min(0.001).max(0.1).step(0.001);
+let geometry = null,
+  material = null,
+  points = null;
 
 // generate galaxy
 const generateGalaxy = () => {
+  // dispose old geometry if any
+  if (points !== null) {
+    geometry.dispose();
+    material.dispose();
+    scene.remove(points);
+  }
   // generate geometry
-  const geometry = new THREE.BufferGeometry();
+  geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(galaxyParams.count * 3);
   for (let i = 0; i < galaxyParams.count; i++) {
     const i3 = i * 3;
-    positions[i3 + 0] = (Math.random() - 0.5) * 3;
-    positions[i3 + 1] = (Math.random() - 0.5) * 3;
-    positions[i3 + 2] = (Math.random() - 0.5) * 3;
+    const radius = Math.random() * galaxyParams.radius;
+    const branchAngle =
+      ((i % galaxyParams.branches) / galaxyParams.branches) * tau;
+    positions[i3 + 0] = Math.cos(branchAngle) * radius;
+    positions[i3 + 1] = 0;
+    positions[i3 + 2] = Math.sin(branchAngle) * radius;
   }
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 
   // material
-  const material = new THREE.PointsMaterial({
+  material = new THREE.PointsMaterial({
     size: galaxyParams.size,
     sizeAttenuation: true,
     depthWrite: false,
@@ -44,11 +59,36 @@ const generateGalaxy = () => {
   });
 
   // points
-  const points = new THREE.Points(geometry, material);
+  points = new THREE.Points(geometry, material);
   scene.add(points);
 };
 
 generateGalaxy();
+
+gui
+  .add(galaxyParams, "count")
+  .min(100)
+  .max(100000)
+  .step(1000)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(galaxyParams, "size")
+  .min(0.001)
+  .max(0.1)
+  .step(0.001)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(galaxyParams, "radius")
+  .min(0.001)
+  .max(2)
+  .step(0.001)
+  .onFinishChange(generateGalaxy);
+gui
+  .add(galaxyParams, "branches")
+  .min(2)
+  .max(9)
+  .step(1)
+  .onFinishChange(generateGalaxy);
 
 /**
  * Sizes

@@ -25,6 +25,8 @@ const galaxyParams = {
   spin: 1,
   randomness: 0.2,
   randomnessPower: 3,
+  insideColor: "#ff6030",
+  outsideColor: "#1b3984",
 };
 
 let geometry = null,
@@ -42,7 +44,13 @@ const generateGalaxy = () => {
   // generate geometry
   geometry = new THREE.BufferGeometry();
   const positions = new Float32Array(galaxyParams.count * 3);
+
+  const colors = new Float32Array(galaxyParams.count * 3);
+  const insideColor = new THREE.Color(galaxyParams.insideColor);
+  const outsideColor = new THREE.Color(galaxyParams.outsideColor);
+
   for (let i = 0; i < galaxyParams.count; i++) {
+    // calculate star position
     const i3 = i * 3;
     const radius = Math.random() * galaxyParams.radius;
     const spinAngle = radius * galaxyParams.spin;
@@ -57,11 +65,21 @@ const generateGalaxy = () => {
     const randomZ =
       Math.pow(Math.random(), galaxyParams.randomnessPower) *
       (Math.random() < 0.5 ? 1 : -1);
+
+    // set position
     positions[i3 + 0] = Math.cos(branchAngle + spinAngle) * radius + randomX;
     positions[i3 + 1] = randomY;
     positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
+
+    // set color
+    const starColor = insideColor.clone();
+    starColor.lerp(outsideColor, radius / galaxyParams.radius);
+    colors[i3] = starColor.r;
+    colors[i3 + 1] = starColor.g;
+    colors[i3 + 2] = starColor.b;
   }
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
   // material
   material = new THREE.PointsMaterial({
@@ -69,6 +87,7 @@ const generateGalaxy = () => {
     sizeAttenuation: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
+    vertexColors: true,
   });
 
   // points
@@ -120,7 +139,8 @@ gui
   .max(10)
   .step(0.001)
   .onFinishChange(generateGalaxy);
-
+gui.addColor(galaxyParams, "insideColor").onFinishChange(generateGalaxy);
+gui.addColor(galaxyParams, "outsideColor").onFinishChange(generateGalaxy);
 /**
  * Sizes
  */
